@@ -338,6 +338,7 @@ label.privacyPolicy {
   transition: all 0.3s ease;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(255, 126, 95, 0.3); 
+  margin-top:10px;
 }
 
 .cta-button:hover {
@@ -485,6 +486,7 @@ button {
 button.goal-achieved {
   background-color: #4caf50;
   cursor: not-allowed;
+  margin-top:5px;
 }
 
 button:disabled {
@@ -609,6 +611,7 @@ button:disabled {
   align-items: center;
   cursor: pointer;
   transition: background-color 0.3s, box-shadow 0.3s;
+  margin-top:5px;
 }
 
 .add-campaign-button:hover {
@@ -636,6 +639,7 @@ button:disabled {
   cursor: pointer;
   transition: background-color 0.3s, box-shadow 0.3s;
   box-sizing: border-box;
+  margin-top:5px;
 }
 
 .delete-button:hover {
@@ -747,4 +751,14 @@ button:focus {
 
 .modal-content input[type="number"]{
   width: 95%;
+}
+.modal-content input[type="file"]{
+  width: 95%;
+}
+.fundraiser-item img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 15px;
 }

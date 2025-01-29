@@ -25,7 +25,7 @@ class SystemUser(AbstractUser):
         related_name="custom_user_permissions_set",  
         blank=True,
     )
-    
+# zbiórki charytatywne i jak będą one wyglądać. 
 class Campaign(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
@@ -38,6 +38,8 @@ class Campaign(models.Model):
     target_amount = models.DecimalField(max_digits=10, decimal_places=2) 
     raised_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    #zapisujemy zdjęcie w postaci binarnej
+    image = models.BinaryField(blank=True, null=True)
 
     def __str__(self):
         return self.name

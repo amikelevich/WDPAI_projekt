@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import BusinessUser, Campaign
 from .models import SystemUser
-
+import base64
 
 #Taki łącznik między requestami a bazą danych, zmienia dane modelu np z pythona na Jsona oraz odwrotnie, transferuje z bazy do backendu i odwrotnie
 class BusinessUserSerializer(serializers.ModelSerializer):
@@ -37,13 +37,22 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email'] 
 
 class CampaignSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField() # odczytuje obraz z bazy danych i koduje go w formacie Base64
+    image_upload = serializers.CharField(write_only=True, required=False)  # przyjmuje obraz w formacie Base64 i przekształca go do formatu binarnego i wrzuca do bazy
+
     class Meta:
         model = Campaign
-        fields = ['campaign_id', 'name', 'description', 'target_amount', 'raised_amount', 'status']
+        fields = ['campaign_id', 'name', 'description', 'target_amount', 'raised_amount', 'status', 'image', 'image_upload']
+    
+    # zmieniam obraz na ten typ z biblioteki i zwracam jako odpowiedź
+    def get_image(self, obj):
+        if obj.image:
+            return base64.b64encode(obj.image).decode('utf-8')
+        return None
 
-    def update(self, instance, validated_data):
-        donation_amount = validated_data.get('donation_amount', 0)
-        if donation_amount > 0:
-            instance.raised_amount += donation_amount
-        instance.save()
-        return instance
+    # dekodujemy obraz oraz tworzymy rekord
+    def create(self, validated_data):
+        image_upload = validated_data.pop('image_upload', None)
+        if image_upload:
+            validated_data['image'] = base64.b64decode(image_upload)
+        return super().create(validated_data)

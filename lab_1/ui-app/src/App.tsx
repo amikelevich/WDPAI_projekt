@@ -23,12 +23,13 @@ const Home = () => {
   const [fundraisers, setFundraisers] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [newCampaign, setNewCampaign] = useState({ name: '', description: '', target_amount: 0, raised_amount: 0, status: 'active' });
+  const [newCampaign, setNewCampaign] = useState({ name: '', description: '', target_amount: 0, raised_amount: 0, status: 'active',  image: null as File | null,image_upload: undefined as string | undefined,});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [donationAmount, setDonationAmount] = useState(0);
   const [error, setError] = useState('');
-
+  
+ // sprawdzamy czy użytkownik jest superuserem, mamy na to osobny widok
   const checkIfAdminAndLoggedIn = () => {
     const token = sessionStorage.getItem('token');
     if (token) {
@@ -52,19 +53,60 @@ const Home = () => {
 
   const addCampaign = () => {
     const token = sessionStorage.getItem('token');
-
-    axios.post(
-      'http://localhost:8000/api/campaigns/create/',
-      newCampaign,
-      { headers: { Authorization: `Bearer ${token}` } },
-    )
-      .then(response => {
-        setFundraisers([...fundraisers, response.data]);
-        setNewCampaign({ name: '', description: '', target_amount: 0, raised_amount: 0, status: 'active' });
-        setIsModalOpen(false);
-      })
-      .catch(error => console.error('Error adding campaign:', error));
+    const formData = { ...newCampaign };
+  
+    if (newCampaign.image) {
+      // jeżeli dodał użytkownik zdjęcie, to staramy się "odczytać" zdjęcie na bibliotekę Base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        formData.image_upload = reader.result?.toString().split(',')[1]; // Base64 bez nagłówka, zakodowany ciąg jedynie
+        axios
+          .post(
+            'http://localhost:8000/api/campaigns/create/',
+            formData,
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+          .then((response) => {
+            setFundraisers([...fundraisers, response.data]);
+            setNewCampaign({
+              name: '',
+              description: '',
+              target_amount: 0,
+              raised_amount: 0,
+              status: 'active',
+              image: null,
+              image_upload: undefined,
+            });
+            setIsModalOpen(false);
+          })
+          .catch((error) => console.error('Error adding campaign:', error));
+      };
+      reader.readAsDataURL(newCampaign.image); //wczytywanie zdjęcia
+    } else {
+      axios
+        .post(
+          'http://localhost:8000/api/campaigns/create/',
+          formData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        .then((response) => {
+          setFundraisers([...fundraisers, response.data]);
+          setNewCampaign({
+            name: '',
+            description: '',
+            target_amount: 0,
+            raised_amount: 0,
+            status: 'active',
+            image: null,
+            image_upload: undefined,
+          });
+          setIsModalOpen(false);
+        })
+        .catch((error) => console.error('Error adding campaign:', error));
+    }
   };
+  
+  
 
   const deleteCampaign = (campaignId: number) => {
     const token = sessionStorage.getItem('token');
@@ -143,6 +185,7 @@ const Home = () => {
       <header className="home-header">
         <h1>Pomagajmy Razem</h1>
         <p>Wspieraj potrzebujących w prosty i przejrzysty sposób. Każda złotówka ma znaczenie.</p>
+        <br/>
         <Link to="/register" className="cta-button">Dołącz do nas</Link>
       </header>
 
@@ -176,6 +219,15 @@ const Home = () => {
                     target_amount: parseFloat(e.target.value) || 0,
                   })}
                 />
+                 <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                  if (e.target.files?.[0]) {
+                  setNewCampaign({ ...newCampaign, image: e.target.files[0] });
+                  }
+                  }}
+                  />
                 <div className="modal-actions">
                   <button onClick={addCampaign}>Dodaj Kampanię</button>
                   <button onClick={() => setIsModalOpen(false)}>Anuluj</button>
@@ -193,6 +245,7 @@ const Home = () => {
         ) : (
           fundraisers.map(fundraiser => (
             <div key={fundraiser.campaign_id} className="fundraiser-item">
+              {fundraiser.image && <img src={`data:image/jpeg;base64,${fundraiser.image}`} alt={fundraiser.name} />}
               <h3>{fundraiser.name}</h3>
               <p>{fundraiser.description}</p>
               <p><strong>Kwota docelowa:</strong> {fundraiser.target_amount} PLN</p>
@@ -203,9 +256,10 @@ const Home = () => {
                   style={{ width: `${(fundraiser.raised_amount / fundraiser.target_amount) * 100}%` }}
                 ></div>
               </div>
+              <br/>
 
               {isLoggedIn && !isAdmin && (
-                <button
+                <button 
                   onClick={() => { setSelectedCampaign(fundraiser); setIsModalOpen(true); }}
                   disabled={handleDonateButtonDisabled(fundraiser)}
                   className={handleDonateButtonDisabled(fundraiser) ? "goal-achieved" : ""}
